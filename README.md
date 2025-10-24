@@ -1,4 +1,4 @@
-# Android-root_termux_script
+# Android_root-homebrew-scripts
 
 Android（主に Termux や root 環境）で使う、シンプルなシェルスクリプト集です。ネットワーク監視やシステム確認、Tailscale の疎通チェックなど、日常運用でよく使う小物をまとめています。
 
