@@ -14,8 +14,8 @@ clear
 # ステータス表示ループ (ちらつき対策版)
 su -c "
 while true; do
-    # カーソルをホームポジション(左上)に移動させるのじゃ
-    tput cup 0 0
+    # カーソルをホームポジション(左上)に移動させるのじゃ (ANSIエスケープシーケンス使用)
+    printf '\033[H'
     
     # 時刻とタイトルを表示
     echo \"[\$(date +'%Y-%m-%d %H:%M:%S')] Tailscale Status\"
@@ -25,10 +25,9 @@ while true; do
     tailscale status
     
     echo \"========================================\"
-    # 前の表示が残らないように、余分な行をクリア
+    # 前の表示が残らないように、余分な行をクリア (ANSIエスケープシーケンス使用)
     for i in {1..10}; do
-        tput el
-        echo \"\"
+        printf '\033[K\n'
     done
     
     sleep 2
