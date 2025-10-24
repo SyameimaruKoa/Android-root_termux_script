@@ -1,3 +1,3 @@
 #/bin/bash
-su -c tailscale status
+su -c 'tailscale status'
 read

@@ -13,7 +13,8 @@ Android（主に Termux や root 環境）で使う、シンプルなシェル�
   - bmon.sh（ネットワーク帯域モニタ）
   - btop.sh（プロセス/リソースモニタ）
   - ip.sh（IP/IF 情報の確認）
-  - tailscale_ping_loop.sh（Tailscale 疎通のループ監視）
+  - tailscale_ping_loop.sh（Tailscale Ping ループ監視）
+  - tailscale_status_loop.sh（Tailscale ステータス監視）
   - tailscale-device.sh（Tailscale デバイス情報）
 - 注意事項
 - 貢献・ライセンス
@@ -24,14 +25,13 @@ Android（主に Termux や root 環境）で使う、シンプルなシェル�
 
 - 実行権限を付与してください。
   - 例: `chmod +x ./bmon.sh`（他の `.sh` も同様）
-- bmon / btop / Tailscale は su（root）で実行し、Magisk モジュールでシステムに直接インストールしている想定です。
+- すべてのスクリプトは `su` コマンドを使用してルート権限で実行します。
+- bmon / btop / Tailscale は Magisk モジュールでシステムに直接インストールしている想定です。
   - そのため、これらについては Termux パッケージの導入は基本的に不要です。
-  - Termux のみで完結させたい場合は、代替として `pkg install bmon btop` や Tailscale の導入手順に従って環境構築してください。
+  - **重要**: Termux の `pkg install` でインストールしたパッケージは、`su -c` では実行できません。Termux パッケージは Termux 環境内でのみ動作します。
+  - Termux のみで完結させたい場合は、スクリプトから `su -c` を削除し、Termux 環境内で直接実行するように修正してください。
 - ネットワーク系の補助ツールが必要な場合のみ、Termux で追加パッケージを導入してください。
   - 例: `pkg install iproute2`（`ip` コマンド用）
-- ルート権限が必要な操作を含む場合は、環境に応じて `su` や `sudo` を使ってください。
-
-> ヒント: いずれのスクリプトも、引数なし実行で基本動作、ヘルプオプション（-h/--help）があれば使い方が表示されます。スクリプト内のコメントも適宜ご覧ください。
 
 ---
 
@@ -43,7 +43,8 @@ Android（主に Termux や root 環境）で使う、シンプルなシェル�
 - 使い方:
   - `./bmon.sh`
 - 依存関係: `bmon`（Magisk モジュールで導入済みを想定）
-  - 代替: Termux のみで使う場合は `pkg install bmon`
+  - 注意: `pkg install bmon` でインストールした場合は `su -c` では動作しません。
+- 実行内容: `su -c 'bmon -b'`
 
 ### btop.sh（プロセス/リソースモニタ）
 
@@ -51,33 +52,54 @@ Android（主に Termux や root 環境）で使う、シンプルなシェル�
 - 使い方:
   - `./btop.sh`
 - 依存関係: `btop`（Magisk モジュールで導入済みを想定）
-  - 代替: Termux のみで使う場合は `pkg install btop`（またはビルド手順に従う）
+  - 注意: `pkg install btop` でインストールした場合は `su -c` では動作しません。
+- 実行内容: `su -c 'btop'`
 
 ### ip.sh（IP/IF 情報の確認）
 
-- 目的: ネットワークインターフェースや IP 情報を簡単に確認。
+- 目的: ネットワークインターフェースや IPv4 情報を簡単に確認。
 - 使い方:
-  - 基本: `./ip.sh`
-  - 追加の引数がある場合はスクリプト内のヘルプやコメントを参照してください。
-- 依存関係: `ip`（iproute2）や `ifconfig` 等、環境によって異なります。
+  - `./ip.sh`
+- 依存関係: `ip`（iproute2）
+- 実行内容: `su -c 'ip -4 a'`
 
-### tailscale_ping_loop.sh（Tailscale 疎通のループ監視）
+### tailscale_ping_loop.sh（Tailscale Ping ループ監視）
 
-- 目的: 指定先に対して一定間隔で ping を実行し続け、疎通を監視。
+- 目的: Tailscale デバイス一覧を表示し、指定したデバイスに対して1秒おきに ping を実行し続け、疎通を監視。
 - 使い方:
-  - `./tailscale_ping_loop.sh <destination>`
-  - 例: `./tailscale_ping_loop.sh 100.101.102.103`
-- 依存関係: `ping` コマンド、Tailscale のセットアップ（Tailscale は Magisk モジュールで導入済みを想定）
+  1. `./tailscale_ping_loop.sh`
+  2. デバイス一覧が表示されるので、Ping を送りたいデバイスの IP アドレスを入力
+  3. Ctrl+C で停止
+- 依存関係: `tailscale`（Magisk モジュールで導入済みを想定）
+- 特徴:
+  - デバイス一覧を自動表示
+  - 1秒間隔で `tailscale ping` を実行
+  - 時刻付きで pong/timeout を表示
+  - `su` で一度だけルート権限を取得し、ループ全体を実行
 - 注意:
-  - 長時間実行でログが肥大化したりバッテリー消費が増える可能性があります。運用時はログローテーションや間隔調整をご検討ください。
+  - 長時間実行でログが肥大化したりバッテリー消費が増える可能性があります。
+
+### tailscale_status_loop.sh（Tailscale ステータス監視）
+
+- 目的: Tailscale のステータスを2秒おきに更新表示し、ネットワークの状態を監視。
+- 使い方:
+  - `./tailscale_status_loop.sh`
+  - Ctrl+C で停止
+- 依存関係: `tailscale`（Magisk モジュールで導入済みを想定）
+- 特徴:
+  - ちらつき対策: カーソル位置制御（`tput cup 0 0`）により画面をクリアせず上書き表示
+  - 2秒間隔で `tailscale status` を自動更新
+  - 時刻付きで表示
+  - `su` で一度だけルート権限を取得し、ループ全体を実行
 
 ### tailscale-device.sh（Tailscale デバイス情報）
 
-- 目的: Tailscale のデバイス一覧や状態確認など、簡易的な操作を補助。
+- 目的: Tailscale のデバイス一覧や状態確認。
 - 使い方:
   - `./tailscale-device.sh`
-  - 詳細オプションがある場合はスクリプト内のヘルプやコメントを参照してください。
-- 依存関係: `tailscale` クライアント（Magisk モジュールで導入済みを想定）
+  - Enter キーを押すと終了
+- 依存関係: `tailscale`（Magisk モジュールで導入済みを想定）
+- 実行内容: `su -c 'tailscale status'` を実行後、入力待ち
 
 ---
 
@@ -85,7 +107,7 @@ Android（主に Termux や root 環境）で使う、シンプルなシェル�
 
 - このリポジトリは個人利用のために保存しているものを公開しているだけです。互換性や安定性、サポートは保証しません。
 - お使いの端末・ROM・カーネル・Termux バージョンにより挙動が異なります。
-- ルートが必要な操作は取り扱いに注意してください。自己責任でご利用ください。
+- すべてのスクリプトはルート権限（`su`）で実行されます。取り扱いに注意してください。自己責任でご利用ください。
 - ネットワーク関連のツールは権限や SELinux 設定の影響を受ける場合があります。
 
 ## 貢献・ライセンス

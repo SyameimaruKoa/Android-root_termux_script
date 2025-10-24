@@ -1,2 +1,2 @@
 #!/bin/bash
-su -c btop
+su -c 'btop'
